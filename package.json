@@ -1,18 +1,20 @@
 {
-  "name": "bolt-expo-starter",
+  "name": "mosaic-circles",
   "main": "expo-router/entry",
   "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "EXPO_NO_TELEMETRY=1 expo start",
     "build:web": "expo export --platform web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.0.2",
     "@react-navigation/bottom-tabs": "^7.2.0",
     "@react-navigation/native": "^7.0.14",
-    "expo": "52.0.33",
+    "expo": "^52.0.0",
     "expo-blur": "^14.0.3",
     "expo-constants": "^17.0.5",
     "expo-font": "^13.0.3",
