@@ -10,7 +10,8 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.improbablee.mosaiccircles"
+      "bundleIdentifier": "com.improbablee.mosaiccircles",
+      "usesApnsToken": false
     },
     "web": {
       "bundler": "metro",
