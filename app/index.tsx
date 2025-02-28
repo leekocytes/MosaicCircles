@@ -7,6 +7,7 @@ import {
   Animated,
   Text,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 
 type Circle = {
   id: number;
@@ -72,6 +73,9 @@ export default function App() {
     // Generate the next color based on the last color
     const nextColor = getNextColor(lastColorRef.current);
     lastColorRef.current = nextColor;
+
+    // Trigger haptic feedback when circle is created
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     const newCircle: Circle = {
       id: Date.now(),
