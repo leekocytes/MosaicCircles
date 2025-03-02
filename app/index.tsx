@@ -17,6 +17,7 @@ import {
   Image,
   Modal,
   ScrollView,
+  Easing,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
@@ -70,30 +71,30 @@ const COLORS = {
     dark: 'light-content',
   },
   tileColors: {
-    2: '#EEE4DA',
-    4: '#EDE0C8',
-    8: '#F2B179',
-    16: '#F59563',
-    32: '#F67C5F',
-    64: '#F65E3B',
-    128: '#EDCF72',
-    256: '#EDCC61',
-    512: '#EDC850',
-    1024: '#EDC53F',
-    2048: '#EDC22E',
+    2: '#2C3E50',    // Deep blue-gray
+    4: '#1ABC9C',    // Turquoise
+    8: '#3498DB',    // Bright blue
+    16: '#9B59B6',   // Amethyst purple
+    32: '#34495E',   // Dark slate
+    64: '#8E44AD',   // Dark violet
+    128: '#2980B9',  // Ocean blue
+    256: '#16A085',  // Green sea
+    512: '#2C3E50',  // Midnight blue
+    1024: '#8A2BE2', // Blurple
+    2048: '#4B0082', // Indigo
   },
   tileFonts: {
-    2: '#776E65',
-    4: '#776E65',
-    8: '#F9F6F2',
-    16: '#F9F6F2',
-    32: '#F9F6F2',
-    64: '#F9F6F2',
-    128: '#F9F6F2',
-    256: '#F9F6F2',
-    512: '#F9F6F2',
-    1024: '#F9F6F2',
-    2048: '#F9F6F2',
+    2: '#FFFFFF',    // White text for all tiles for better contrast
+    4: '#FFFFFF',
+    8: '#FFFFFF',
+    16: '#FFFFFF',
+    32: '#FFFFFF',
+    64: '#FFFFFF',
+    128: '#FFFFFF',
+    256: '#FFFFFF',
+    512: '#FFFFFF',
+    1024: '#FFFFFF',
+    2048: '#FFFFFF',
   }
 };
 
@@ -452,17 +453,25 @@ function Mosaic2048Game() {
           // Add to merged tiles array
           mergedTiles.push(tiles[i-1]);
           
-          // Remove current tile by not adding it to result
-          moved = true;
-        } else {
-          // Just move the tile
-          if (resultIdx !== i || row[resultIdx] !== currentTile) {
-            moved = true;
+          // Apply more intense animation for higher value tiles
+          if (tiles[i-1].value >= 128) {
+            tiles[i-1].scale.setValue(0.8); // Start smaller for a more dramatic effect
           }
           
-          resultRow[resultIdx] = currentTile;
-          resultIdx++;
+          // We've merged this tile, so skip adding it to the result
+          moved = true;
+          
+          // Continue to the next tile without incrementing resultIdx
+          continue;
         }
+        
+        // Just move the tile (either not merged or no previous tile to merge with)
+        if (resultIdx !== i || row[resultIdx] !== currentTile) {
+          moved = true;
+        }
+        
+        resultRow[resultIdx] = currentTile;
+        resultIdx++;
       }
       
       return resultRow;
@@ -547,18 +556,53 @@ function Mosaic2048Game() {
     
     // Animate merged tiles
     mergedTiles.forEach(tile => {
-      Animated.sequence([
+      // Create more dramatic effects for high value tiles
+      const scaleMax = tile.value >= 128 ? 1.3 : 1.2;
+      const duration1 = tile.value >= 128 ? 200 : 150;
+      const duration2 = tile.value >= 128 ? 200 : 150;
+      
+      // Add a subtle rotation for higher value tiles
+      const rotateAnim = tile.value >= 64 ? 
         Animated.timing(tile.scale, {
-          toValue: 1.2,
-          duration: 150,
+          toValue: scaleMax,
+          duration: duration1 * 0.7,
           useNativeDriver: true,
+          easing: Easing.bezier(0.175, 0.885, 0.32, 1.275), // Bouncy easing
+        }) : null;
+        
+      // Create animation sequence with optional rotation
+      const animSequence = [
+        Animated.timing(tile.scale, {
+          toValue: scaleMax,
+          duration: duration1,
+          useNativeDriver: true,
+          easing: Easing.bezier(0.175, 0.885, 0.32, 1.275), // Bouncy easing
         }),
         Animated.timing(tile.scale, {
           toValue: 1,
-          duration: 150,
+          duration: duration2,
           useNativeDriver: true,
         }),
-      ]).start(() => {
+      ];
+      
+      // Add optional flash effect for higher value tiles
+      if (tile.value >= 256) {
+        // Add bright pulse effect
+        animSequence.splice(1, 0, 
+          Animated.timing(tile.opacity, {
+            toValue: 0.7,
+            duration: 100,
+            useNativeDriver: true,
+          }),
+          Animated.timing(tile.opacity, {
+            toValue: 1,
+            duration: 100,
+            useNativeDriver: true,
+          })
+        );
+      }
+      
+      Animated.sequence(animSequence).start(() => {
         tile.isMerging = false;
       });
     });
@@ -692,7 +736,10 @@ function Mosaic2048Game() {
     return (
       <View style={styles.gameBoard}>
         {/* Grid background */}
-        <View style={styles.gridBackground}>
+        <View style={[
+          styles.gridBackground,
+          isDark ? styles.gridBackgroundDark : styles.gridBackgroundLight
+        ]}>
           {Array(GRID_SIZE).fill(null).map((_, rowIndex) => (
             <View key={`row-${rowIndex}`} style={styles.gridRow}>
               {Array(GRID_SIZE).fill(null).map((_, colIndex) => (
@@ -700,6 +747,7 @@ function Mosaic2048Game() {
                   key={`cell-${rowIndex}-${colIndex}`} 
                   style={[
                     styles.gridCell,
+                    isDark ? styles.gridCellDark : styles.gridCellLight,
                     {
                       width: tileSize,
                       height: tileSize,
@@ -1636,28 +1684,49 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   gridBackground: {
-    backgroundColor: '#BBADA0',
-    borderRadius: 8,
+    borderRadius: 12,
     padding: TILE_MARGIN,
+    borderWidth: 1,
+    borderColor: 'rgba(138, 43, 226, 0.3)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 10,
+  },
+  gridBackgroundLight: {
+    backgroundColor: '#2A2A4A',
+  },
+  gridBackgroundDark: {
+    backgroundColor: '#1E1E2E',
   },
   gridRow: {
     flexDirection: 'row',
   },
   gridCell: {
     margin: TILE_MARGIN,
-    backgroundColor: 'rgba(238, 228, 218, 0.35)',
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  gridCellLight: {
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  gridCellDark: {
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
   },
   tile: {
     position: 'absolute',
-    borderRadius: 8,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   mergingTile: {
     zIndex: 10,
@@ -1666,6 +1735,10 @@ const styles = StyleSheet.create({
     fontSize: 30,
     fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
     fontWeight: 'bold',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+    letterSpacing: 1,
   },
   streakContainer: {
     position: 'absolute',
