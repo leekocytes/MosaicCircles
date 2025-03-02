@@ -2,6 +2,7 @@ import { useColorScheme } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { AuthProvider } from '../context/AuthContext';
 
 declare global {
   interface Window {
@@ -17,11 +18,9 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="index" />
-      </Stack>
+    <AuthProvider>
+      <Stack screenOptions={{ headerShown: false }} />
       <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-    </>
+    </AuthProvider>
   );
 }
